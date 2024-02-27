@@ -1,54 +1,35 @@
-!pip install scikit-surprise
-import pandas as pd
-from surprise import Dataset, Reader, KNNBasic
-from surprise.model_selection import train_test_split
-from surprise import accuracy
-from google.colab import drive
+import random
 
-drive.mount('/content/drive')
-file_path_1 = '/content/drive/My Drive/Colab Notebooks/dataset/ml-latest-small/movies.csv'
-file_path_2 = '/content/drive/My Drive/Colab Notebooks/dataset/ml-latest-small/ratings.csv'
+class RecommendationSystem:
+    def __init__(self):
+        self.purchase_history = {}  # Dictionary to store purchase history for each user
 
-movies = pd.read_csv(file_path_1)
-ratings = pd.read_csv(file_path_2)
+    def update_purchase_history(self, user_id, purchased_items):
+        if user_id not in self.purchase_history:
+            self.purchase_history[user_id] = []
+        self.purchase_history[user_id].extend(purchased_items)
 
-reader = Reader(rating_scale=(0.5, 5))
-data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
+    def recommend_items(self, user_id, n=5):
+        if user_id in self.purchase_history:
+            purchased_items = self.purchase_history[user_id]
+            # Here you can implement your recommendation logic based on the user's purchase history
+            # For demonstration purposes, we're just randomly selecting items from the purchase history
+            recommended_items = random.sample(purchased_items, min(n, len(purchased_items)))
+            return recommended_items
+        else:
+            return []
 
-trainset, testset = train_test_split(data, test_size=0.2) # Corrected line
+# Example usage:
+recommendation_system = RecommendationSystem()
 
-sim_options = {
-    'name': 'cosine',
-    'user_based': True,
-}
-model = KNNBasic(sim_options=sim_options)
-model.fit(trainset)
+# Simulate purchase history for users
+recommendation_system.update_purchase_history("user123", ["Laptop", "Mouse", "Keyboard"])
+recommendation_system.update_purchase_history("user456", ["Chair", "Desk", "Lamp"])
 
-predictions = model.test(testset)
+# Get recommendations for a user
+recommended_items = recommendation_system.recommend_items("user123", n=3)
+print("Recommended items for user123:", recommended_items)
 
-rmse = accuracy.rmse(predictions)
+recommended_items = recommendation_system.recommend_items("user456", n=3)
+print("Recommended items for user456:", recommended_items)
 
-def recommend_movies(user_id, n=10):
-    movies_watched = ratings[ratings['userId'] == user_id]['movieId'].tolist()
-    unrated_movies = movies[~movies['movieId'].isin(movies_watched)]
-
-    recommendations = []
-    for movie_id in unrated_movies['movieId']:
-        predicted_rating = model.predict(user_id, movie_id).est
-        recommendations.append((movie_id, predicted_rating))
-
-    recommendations.sort(key=lambda x: x[1], reverse=True)
-    top_n_recommendations = recommendations[:n]
-
-    recommended_movies = movies[movies['movieId'].isin([movie[0] for movie in top_n_recommendations])]
-    return recommended_movies[['movieId', 'title']]
-
-user_id = 1
-recommended_movies = recommend_movies(user_id, n=10)
-print(f"Top 10 recommended movies for User {user_id}:")
-print(recommended_movies)
-
-user_id = 5
-recommended_movies = recommend_movies(user_id, n=10)
-print(f"Top 10 recommended movies for User {user_id}:")
-print(recommended_movies)
