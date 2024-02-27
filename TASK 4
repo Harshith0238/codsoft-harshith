@@ -1,36 +1,33 @@
 !pip install scikit-surprise
-# Import required libraries:
 import pandas as pd
 from surprise import Dataset, Reader, KNNBasic
 from surprise.model_selection import train_test_split
 from surprise import accuracy
-!pip install joblib>=1.0.0
 from google.colab import drive
+
 drive.mount('/content/drive')
 file_path_1 = '/content/drive/My Drive/Colab Notebooks/dataset/ml-latest-small/movies.csv'
 file_path_2 = '/content/drive/My Drive/Colab Notebooks/dataset/ml-latest-small/ratings.csv'
-# Load the data from the MovieLens dataset
+
 movies = pd.read_csv(file_path_1)
 ratings = pd.read_csv(file_path_2)
-# Create a Surprise Dataset
+
 reader = Reader(rating_scale=(0.5, 5))
 data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
 
-# Split the data into training and testing sets
-trainset, testset = train_test_split(data, test_size=0.2
-# Build a user-based collaborative filtering model
+trainset, testset = train_test_split(data, test_size=0.2) # Corrected line
+
 sim_options = {
     'name': 'cosine',
     'user_based': True,
 }
 model = KNNBasic(sim_options=sim_options)
 model.fit(trainset)
-# Make predictions on the test set
+
 predictions = model.test(testset)
 
-# Evaluate the model's performance
 rmse = accuracy.rmse(predictions)
-# Function to recommend movies for a given user
+
 def recommend_movies(user_id, n=10):
     movies_watched = ratings[ratings['userId'] == user_id]['movieId'].tolist()
     unrated_movies = movies[~movies['movieId'].isin(movies_watched)]
@@ -45,13 +42,12 @@ def recommend_movies(user_id, n=10):
 
     recommended_movies = movies[movies['movieId'].isin([movie[0] for movie in top_n_recommendations])]
     return recommended_movies[['movieId', 'title']]
-# Example_1:
+
 user_id = 1
 recommended_movies = recommend_movies(user_id, n=10)
 print(f"Top 10 recommended movies for User {user_id}:")
 print(recommended_movies)
 
-# Example_2:
 user_id = 5
 recommended_movies = recommend_movies(user_id, n=10)
 print(f"Top 10 recommended movies for User {user_id}:")
